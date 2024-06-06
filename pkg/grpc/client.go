@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-skynet/LocalAI/api/schema"
+	"github.com/go-skynet/LocalAI/core/schema"
 	pb "github.com/go-skynet/LocalAI/pkg/grpc/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -27,17 +27,6 @@ type WatchDog interface {
 	UnMark(address string)
 }
 
-func NewClient(address string, parallel bool, wd WatchDog, enableWatchDog bool) *Client {
-	if !enableWatchDog {
-		wd = nil
-	}
-	return &Client{
-		address:  address,
-		parallel: parallel,
-		wd:       wd,
-	}
-}
-
 func (c *Client) IsBusy() bool {
 	c.Lock()
 	defer c.Unlock()
@@ -50,7 +39,7 @@ func (c *Client) setBusy(v bool) {
 	c.Unlock()
 }
 
-func (c *Client) HealthCheck(ctx context.Context) bool {
+func (c *Client) HealthCheck(ctx context.Context) (bool, error) {
 	if !c.parallel {
 		c.opMutex.Lock()
 		defer c.opMutex.Unlock()
@@ -59,8 +48,7 @@ func (c *Client) HealthCheck(ctx context.Context) bool {
 	defer c.setBusy(false)
 	conn, err := grpc.Dial(c.address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		fmt.Println(err)
-		return false
+		return false, err
 	}
 	defer conn.Close()
 	client := pb.NewBackendClient(conn)
@@ -71,15 +59,14 @@ func (c *Client) HealthCheck(ctx context.Context) bool {
 
 	res, err := client.Health(ctx, &pb.HealthMessage{})
 	if err != nil {
-		fmt.Println(err)
-
-		return false
+		return false, err
 	}
 
 	if string(res.Message) == "OK" {
-		return true
+		return true, nil
 	}
-	return false
+
+	return false, fmt.Errorf("health check failed: %s", res.Message)
 }
 
 func (c *Client) Embeddings(ctx context.Context, in *pb.PredictOptions, opts ...grpc.CallOption) (*pb.EmbeddingResult, error) {
@@ -223,7 +210,7 @@ func (c *Client) TTS(ctx context.Context, in *pb.TTSRequest, opts ...grpc.CallOp
 	return client.TTS(ctx, in, opts...)
 }
 
-func (c *Client) AudioTranscription(ctx context.Context, in *pb.TranscriptRequest, opts ...grpc.CallOption) (*schema.Result, error) {
+func (c *Client) AudioTranscription(ctx context.Context, in *pb.TranscriptRequest, opts ...grpc.CallOption) (*schema.TranscriptionResult, error) {
 	if !c.parallel {
 		c.opMutex.Lock()
 		defer c.opMutex.Unlock()
@@ -244,7 +231,7 @@ func (c *Client) AudioTranscription(ctx context.Context, in *pb.TranscriptReques
 	if err != nil {
 		return nil, err
 	}
-	tresult := &schema.Result{}
+	tresult := &schema.TranscriptionResult{}
 	for _, s := range res.Segments {
 		tks := []int{}
 		for _, t := range s.Tokens {
@@ -303,4 +290,84 @@ func (c *Client) Status(ctx context.Context) (*pb.StatusResponse, error) {
 	defer conn.Close()
 	client := pb.NewBackendClient(conn)
 	return client.Status(ctx, &pb.HealthMessage{})
+}
+
+func (c *Client) StoresSet(ctx context.Context, in *pb.StoresSetOptions, opts ...grpc.CallOption) (*pb.Result, error) {
+	if !c.parallel {
+		c.opMutex.Lock()
+		defer c.opMutex.Unlock()
+	}
+	c.setBusy(true)
+	defer c.setBusy(false)
+	conn, err := grpc.Dial(c.address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := pb.NewBackendClient(conn)
+	return client.StoresSet(ctx, in, opts...)
+}
+
+func (c *Client) StoresDelete(ctx context.Context, in *pb.StoresDeleteOptions, opts ...grpc.CallOption) (*pb.Result, error) {
+	if !c.parallel {
+		c.opMutex.Lock()
+		defer c.opMutex.Unlock()
+	}
+	c.setBusy(true)
+	defer c.setBusy(false)
+	conn, err := grpc.Dial(c.address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := pb.NewBackendClient(conn)
+	return client.StoresDelete(ctx, in, opts...)
+}
+
+func (c *Client) StoresGet(ctx context.Context, in *pb.StoresGetOptions, opts ...grpc.CallOption) (*pb.StoresGetResult, error) {
+	if !c.parallel {
+		c.opMutex.Lock()
+		defer c.opMutex.Unlock()
+	}
+	c.setBusy(true)
+	defer c.setBusy(false)
+	conn, err := grpc.Dial(c.address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := pb.NewBackendClient(conn)
+	return client.StoresGet(ctx, in, opts...)
+}
+
+func (c *Client) StoresFind(ctx context.Context, in *pb.StoresFindOptions, opts ...grpc.CallOption) (*pb.StoresFindResult, error) {
+	if !c.parallel {
+		c.opMutex.Lock()
+		defer c.opMutex.Unlock()
+	}
+	c.setBusy(true)
+	defer c.setBusy(false)
+	conn, err := grpc.Dial(c.address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := pb.NewBackendClient(conn)
+	return client.StoresFind(ctx, in, opts...)
+}
+
+func (c *Client) Rerank(ctx context.Context, in *pb.RerankRequest, opts ...grpc.CallOption) (*pb.RerankResult, error) {
+	if !c.parallel {
+		c.opMutex.Lock()
+		defer c.opMutex.Unlock()
+	}
+	c.setBusy(true)
+	defer c.setBusy(false)
+	conn, err := grpc.Dial(c.address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := pb.NewBackendClient(conn)
+	return client.Rerank(ctx, in, opts...)
 }

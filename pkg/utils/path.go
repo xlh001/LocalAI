@@ -2,10 +2,17 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
-func inTrustedRoot(path string, trustedRoot string) error {
+func ExistsInPath(path string, s string) bool {
+	_, err := os.Stat(filepath.Join(path, s))
+	return err == nil
+}
+
+func InTrustedRoot(path string, trustedRoot string) error {
 	for path != "/" {
 		path = filepath.Dir(path)
 		if path == trustedRoot {
@@ -18,5 +25,16 @@ func inTrustedRoot(path string, trustedRoot string) error {
 // VerifyPath verifies that path is based in basePath.
 func VerifyPath(path, basePath string) error {
 	c := filepath.Clean(filepath.Join(basePath, path))
-	return inTrustedRoot(c, filepath.Clean(basePath))
+	return InTrustedRoot(c, filepath.Clean(basePath))
+}
+
+// SanitizeFileName sanitizes the given filename
+func SanitizeFileName(fileName string) string {
+	// filepath.Clean to clean the path
+	cleanName := filepath.Clean(fileName)
+	// filepath.Base to ensure we only get the final element, not any directory path
+	baseName := filepath.Base(cleanName)
+	// Replace any remaining tricky characters that might have survived cleaning
+	safeName := strings.ReplaceAll(baseName, "..", "")
+	return safeName
 }
