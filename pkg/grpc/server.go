@@ -131,10 +131,10 @@ func (s *server) PredictStream(in *pb.PredictOptions, stream pb.Backend_PredictS
 		done <- true
 	}()
 
-	s.llm.PredictStream(in, resultChan)
+	err := s.llm.PredictStream(in, resultChan)
 	<-done
 
-	return nil
+	return err
 }
 
 func (s *server) TokenizeString(ctx context.Context, in *pb.PredictOptions) (*pb.TokenizationResponse, error) {
@@ -167,6 +167,54 @@ func (s *server) Status(ctx context.Context, in *pb.HealthMessage) (*pb.StatusRe
 	return &res, nil
 }
 
+func (s *server) StoresSet(ctx context.Context, in *pb.StoresSetOptions) (*pb.Result, error) {
+	if s.llm.Locking() {
+		s.llm.Lock()
+		defer s.llm.Unlock()
+	}
+	err := s.llm.StoresSet(in)
+	if err != nil {
+		return &pb.Result{Message: fmt.Sprintf("Error setting entry: %s", err.Error()), Success: false}, err
+	}
+	return &pb.Result{Message: "Set key", Success: true}, nil
+}
+
+func (s *server) StoresDelete(ctx context.Context, in *pb.StoresDeleteOptions) (*pb.Result, error) {
+	if s.llm.Locking() {
+		s.llm.Lock()
+		defer s.llm.Unlock()
+	}
+	err := s.llm.StoresDelete(in)
+	if err != nil {
+		return &pb.Result{Message: fmt.Sprintf("Error deleting entry: %s", err.Error()), Success: false}, err
+	}
+	return &pb.Result{Message: "Deleted key", Success: true}, nil
+}
+
+func (s *server) StoresGet(ctx context.Context, in *pb.StoresGetOptions) (*pb.StoresGetResult, error) {
+	if s.llm.Locking() {
+		s.llm.Lock()
+		defer s.llm.Unlock()
+	}
+	res, err := s.llm.StoresGet(in)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (s *server) StoresFind(ctx context.Context, in *pb.StoresFindOptions) (*pb.StoresFindResult, error) {
+	if s.llm.Locking() {
+		s.llm.Lock()
+		defer s.llm.Unlock()
+	}
+	res, err := s.llm.StoresFind(in)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
 func StartServer(address string, model LLM) error {
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
@@ -180,4 +228,24 @@ func StartServer(address string, model LLM) error {
 	}
 
 	return nil
+}
+
+func RunServer(address string, model LLM) (func() error, error) {
+	lis, err := net.Listen("tcp", address)
+	if err != nil {
+		return nil, err
+	}
+	s := grpc.NewServer()
+	pb.RegisterBackendServer(s, &server{llm: model})
+	log.Printf("gRPC Server listening at %v", lis.Addr())
+	if err = s.Serve(lis); err != nil {
+		return func() error {
+			return lis.Close()
+		}, err
+	}
+
+	return func() error {
+		s.GracefulStop()
+		return nil
+	}, nil
 }
