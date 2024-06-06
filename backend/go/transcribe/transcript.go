@@ -8,29 +8,29 @@ import (
 
 	"github.com/ggerganov/whisper.cpp/bindings/go/pkg/whisper"
 	"github.com/go-audio/wav"
-	"github.com/go-skynet/LocalAI/api/schema"
+	"github.com/go-skynet/LocalAI/core/schema"
 )
 
-func sh(c string) (string, error) {
-	cmd := exec.Command("/bin/sh", "-c", c)
+func ffmpegCommand(args []string) (string, error) {
+	cmd := exec.Command("ffmpeg", args...) // Constrain this to ffmpeg to permit security scanner to see that the command is safe.
 	cmd.Env = os.Environ()
-	o, err := cmd.CombinedOutput()
-	return string(o), err
+	out, err := cmd.CombinedOutput()
+	return string(out), err
 }
 
-// AudioToWav converts audio to wav for transcribe. It bashes out to ffmpeg
+// AudioToWav converts audio to wav for transcribe.
 // TODO: use https://github.com/mccoyst/ogg?
 func audioToWav(src, dst string) error {
-	out, err := sh(fmt.Sprintf("ffmpeg -i %s -format s16le -ar 16000 -ac 1 -acodec pcm_s16le %s", src, dst))
+	commandArgs := []string{"-i", src, "-format", "s16le", "-ar", "16000", "-ac", "1", "-acodec", "pcm_s16le", dst}
+	out, err := ffmpegCommand(commandArgs)
 	if err != nil {
 		return fmt.Errorf("error: %w out: %s", err, out)
 	}
-
 	return nil
 }
 
-func Transcript(model whisper.Model, audiopath, language string, threads uint) (schema.Result, error) {
-	res := schema.Result{}
+func Transcript(model whisper.Model, audiopath, language string, threads uint) (schema.TranscriptionResult, error) {
+	res := schema.TranscriptionResult{}
 
 	dir, err := os.MkdirTemp("", "whisper")
 	if err != nil {
