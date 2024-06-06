@@ -1,6 +1,7 @@
 package gallery_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -11,6 +12,7 @@ import (
 )
 
 var _ = Describe("Model test", func() {
+
 	Context("Downloading", func() {
 		It("applies model correctly", func() {
 			tempdir, err := os.MkdirTemp("", "test")
@@ -18,7 +20,6 @@ var _ = Describe("Model test", func() {
 			defer os.RemoveAll(tempdir)
 			c, err := ReadConfigFile(filepath.Join(os.Getenv("FIXTURES"), "gallery_simple.yaml"))
 			Expect(err).ToNot(HaveOccurred())
-
 			err = InstallModel(tempdir, "", c, map[string]interface{}{}, func(string, string, string, float64) {})
 			Expect(err).ToNot(HaveOccurred())
 
@@ -49,13 +50,14 @@ var _ = Describe("Model test", func() {
 			}}
 			out, err := yaml.Marshal(gallery)
 			Expect(err).ToNot(HaveOccurred())
-			err = os.WriteFile(filepath.Join(tempdir, "gallery_simple.yaml"), out, 0644)
+			galleryFilePath := filepath.Join(tempdir, "gallery_simple.yaml")
+			err = os.WriteFile(galleryFilePath, out, 0600)
 			Expect(err).ToNot(HaveOccurred())
-
+			Expect(filepath.IsAbs(galleryFilePath)).To(BeTrue(), galleryFilePath)
 			galleries := []Gallery{
 				{
 					Name: "test",
-					URL:  "file://" + filepath.Join(tempdir, "gallery_simple.yaml"),
+					URL:  "file://" + galleryFilePath,
 				},
 			}
 
@@ -81,6 +83,19 @@ var _ = Describe("Model test", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(models)).To(Equal(1))
 			Expect(models[0].Installed).To(BeTrue())
+
+			// delete
+			err = DeleteModelFromSystem(tempdir, "bert", []string{})
+			Expect(err).ToNot(HaveOccurred())
+
+			models, err = AvailableGalleryModels(galleries, tempdir)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(models)).To(Equal(1))
+			Expect(models[0].Installed).To(BeFalse())
+
+			_, err = os.Stat(filepath.Join(tempdir, "bert.yaml"))
+			Expect(err).To(HaveOccurred())
+			Expect(errors.Is(err, os.ErrNotExist)).To(BeTrue())
 		})
 
 		It("renames model correctly", func() {

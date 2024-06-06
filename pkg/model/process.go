@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -14,8 +15,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (ml *ModelLoader) StopAllExcept(s string) {
-	ml.StopGRPC(func(id string, p *process.Process) bool {
+func (ml *ModelLoader) StopAllExcept(s string) error {
+	return ml.StopGRPC(func(id string, p *process.Process) bool {
 		if id != s {
 			for ml.models[id].GRPC(false, ml.wd).IsBusy() {
 				log.Debug().Msgf("%s busy. Waiting.", id)
@@ -29,8 +30,10 @@ func (ml *ModelLoader) StopAllExcept(s string) {
 }
 
 func (ml *ModelLoader) deleteProcess(s string) error {
-	if err := ml.grpcProcesses[s].Stop(); err != nil {
-		return err
+	if _, exists := ml.grpcProcesses[s]; exists {
+		if err := ml.grpcProcesses[s].Stop(); err != nil {
+			return err
+		}
 	}
 	delete(ml.grpcProcesses, s)
 	delete(ml.models, s)
@@ -43,16 +46,19 @@ func includeAllProcesses(_ string, _ *process.Process) bool {
 	return true
 }
 
-func (ml *ModelLoader) StopGRPC(filter GRPCProcessFilter) {
+func (ml *ModelLoader) StopGRPC(filter GRPCProcessFilter) error {
+	var err error = nil
 	for k, p := range ml.grpcProcesses {
 		if filter(k, p) {
-			ml.deleteProcess(k)
+			e := ml.deleteProcess(k)
+			err = errors.Join(err, e)
 		}
 	}
+	return err
 }
 
-func (ml *ModelLoader) StopAllGRPC() {
-	ml.StopGRPC(includeAllProcesses)
+func (ml *ModelLoader) StopAllGRPC() error {
+	return ml.StopGRPC(includeAllProcesses)
 }
 
 func (ml *ModelLoader) GetGRPCPID(id string) (int, error) {
@@ -65,7 +71,7 @@ func (ml *ModelLoader) GetGRPCPID(id string) (int, error) {
 
 func (ml *ModelLoader) startProcess(grpcProcess, id string, serverAddress string) error {
 	// Make sure the process is executable
-	if err := os.Chmod(grpcProcess, 0755); err != nil {
+	if err := os.Chmod(grpcProcess, 0700); err != nil {
 		return err
 	}
 
