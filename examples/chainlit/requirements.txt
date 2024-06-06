@@ -1,5 +1,5 @@
 llama_hub==0.0.41
-llama_index==0.8.55
+llama_index==0.9.36
 Requests==2.31.0
 weaviate_client==3.25.1
 transformers
