@@ -6,6 +6,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/go-skynet/LocalAI/pkg/downloader"
+	"github.com/rs/zerolog/log"
+
 	"github.com/go-skynet/LocalAI/pkg/assets"
 	"gopkg.in/yaml.v3"
 )
@@ -27,7 +30,23 @@ func ModelShortURL(s string) string {
 }
 
 func init() {
-	yaml.Unmarshal(modelLibrary, &modelShorteners)
+	err := yaml.Unmarshal(modelLibrary, &modelShorteners)
+	if err != nil {
+		log.Error().Err(err).Msg("error while unmarshalling embedded modelLibrary")
+	}
+}
+
+func GetRemoteLibraryShorteners(url string, basePath string) (map[string]string, error) {
+	remoteLibrary := map[string]string{}
+
+	err := downloader.GetURI(url, basePath, func(_ string, i []byte) error {
+		return yaml.Unmarshal(i, &remoteLibrary)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error downloading remote library: %s", err.Error())
+	}
+
+	return remoteLibrary, err
 }
 
 // ExistsInModelsLibrary checks if a model exists in the embedded models library
