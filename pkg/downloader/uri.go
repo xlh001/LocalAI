@@ -23,7 +23,7 @@ const (
 	GithubURI2        = "github://"
 )
 
-func GetURI(url string, f func(url string, i []byte) error) error {
+func GetURI(url string, basePath string, f func(url string, i []byte) error) error {
 	url = ConvertURL(url)
 
 	if strings.HasPrefix(url, "file://") {
@@ -31,6 +31,17 @@ func GetURI(url string, f func(url string, i []byte) error) error {
 		// checks if the file is symbolic, and resolve if so - otherwise, this function returns the path unmodified.
 		resolvedFile, err := filepath.EvalSymlinks(rawURL)
 		if err != nil {
+			return err
+		}
+		// ???
+		resolvedBasePath, err := filepath.EvalSymlinks(basePath)
+		if err != nil {
+			return err
+		}
+		// Check if the local file is rooted in basePath
+		err = utils.InTrustedRoot(resolvedFile, resolvedBasePath)
+		if err != nil {
+			log.Debug().Str("resolvedFile", resolvedFile).Str("basePath", basePath).Msg("downloader.GetURI blocked an attempt to ready a file url outside of basePath")
 			return err
 		}
 		// Read the response body
@@ -136,7 +147,7 @@ func removePartialFile(tmpFilePath string) error {
 	return nil
 }
 
-func DownloadFile(url string, filePath, sha string, downloadStatus func(string, string, string, float64)) error {
+func DownloadFile(url string, filePath, sha string, fileN, total int, downloadStatus func(string, string, string, float64)) error {
 	url = ConvertURL(url)
 	// Check if the file already exists
 	_, err := os.Stat(filePath)
@@ -179,8 +190,12 @@ func DownloadFile(url string, filePath, sha string, downloadStatus func(string, 
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("failed to download url %q, invalid status code %d", url, resp.StatusCode)
+	}
+
 	// Create parent directory
-	err = os.MkdirAll(filepath.Dir(filePath), 0755)
+	err = os.MkdirAll(filepath.Dir(filePath), 0750)
 	if err != nil {
 		return fmt.Errorf("failed to create parent directory for file %q: %v", filePath, err)
 	}
@@ -205,6 +220,8 @@ func DownloadFile(url string, filePath, sha string, downloadStatus func(string, 
 		fileName:       tmpFilePath,
 		total:          resp.ContentLength,
 		hash:           sha256.New(),
+		fileNo:         fileN,
+		totalFiles:     total,
 		downloadStatus: downloadStatus,
 	}
 	_, err = io.Copy(io.MultiWriter(outFile, progress), resp.Body)
