@@ -40,8 +40,10 @@ prompt_templates:
 */
 // Config is the model configuration which contains all the model details
 // This configuration is read from the gallery endpoint and is used to download and install the model
+// It is the internal structure, separated from the request
 type Config struct {
 	Description     string           `yaml:"description"`
+	Icon            string           `yaml:"icon"`
 	License         string           `yaml:"license"`
 	URLs            []string         `yaml:"urls"`
 	Name            string           `yaml:"name"`
@@ -61,13 +63,13 @@ type PromptTemplate struct {
 	Content string `yaml:"content"`
 }
 
-func GetGalleryConfigFromURL(url string) (Config, error) {
+func GetGalleryConfigFromURL(url string, basePath string) (Config, error) {
 	var config Config
-	err := downloader.GetURI(url, func(url string, d []byte) error {
+	err := downloader.GetURI(url, basePath, func(url string, d []byte) error {
 		return yaml.Unmarshal(d, &config)
 	})
 	if err != nil {
-		log.Error().Msgf("GetGalleryConfigFromURL error for url %s\n%s", url, err.Error())
+		log.Error().Err(err).Str("url", url).Msg("failed to get gallery config for url")
 		return config, err
 	}
 	return config, nil
@@ -92,7 +94,7 @@ func ReadConfigFile(filePath string) (*Config, error) {
 
 func InstallModel(basePath, nameOverride string, config *Config, configOverrides map[string]interface{}, downloadStatus func(string, string, string, float64)) error {
 	// Create base path if it doesn't exist
-	err := os.MkdirAll(basePath, 0755)
+	err := os.MkdirAll(basePath, 0750)
 	if err != nil {
 		return fmt.Errorf("failed to create base path: %v", err)
 	}
@@ -102,7 +104,7 @@ func InstallModel(basePath, nameOverride string, config *Config, configOverrides
 	}
 
 	// Download files and verify their SHA
-	for _, file := range config.Files {
+	for i, file := range config.Files {
 		log.Debug().Msgf("Checking %q exists and matches SHA", file.Filename)
 
 		if err := utils.VerifyPath(file.Filename, basePath); err != nil {
@@ -111,7 +113,7 @@ func InstallModel(basePath, nameOverride string, config *Config, configOverrides
 		// Create file path
 		filePath := filepath.Join(basePath, file.Filename)
 
-		if err := downloader.DownloadFile(file.URI, filePath, file.SHA256, downloadStatus); err != nil {
+		if err := downloader.DownloadFile(file.URI, filePath, file.SHA256, i, len(config.Files), downloadStatus); err != nil {
 			return err
 		}
 	}
@@ -125,12 +127,12 @@ func InstallModel(basePath, nameOverride string, config *Config, configOverrides
 		filePath := filepath.Join(basePath, template.Name+".tmpl")
 
 		// Create parent directory
-		err := os.MkdirAll(filepath.Dir(filePath), 0755)
+		err := os.MkdirAll(filepath.Dir(filePath), 0750)
 		if err != nil {
 			return fmt.Errorf("failed to create parent directory for prompt template %q: %v", template.Name, err)
 		}
 		// Create and write file content
-		err = os.WriteFile(filePath, []byte(template.Content), 0644)
+		err = os.WriteFile(filePath, []byte(template.Content), 0600)
 		if err != nil {
 			return fmt.Errorf("failed to write prompt template %q: %v", template.Name, err)
 		}
@@ -170,7 +172,7 @@ func InstallModel(basePath, nameOverride string, config *Config, configOverrides
 			return fmt.Errorf("failed to marshal updated config YAML: %v", err)
 		}
 
-		err = os.WriteFile(configFilePath, updatedConfigYAML, 0644)
+		err = os.WriteFile(configFilePath, updatedConfigYAML, 0600)
 		if err != nil {
 			return fmt.Errorf("failed to write updated config file: %v", err)
 		}
@@ -178,5 +180,20 @@ func InstallModel(basePath, nameOverride string, config *Config, configOverrides
 		log.Debug().Msgf("Written config file %s", configFilePath)
 	}
 
-	return nil
+	// Save the model gallery file for further reference
+	modelFile := filepath.Join(basePath, galleryFileName(name))
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	log.Debug().Msgf("Written gallery file %s", modelFile)
+
+	return os.WriteFile(modelFile, data, 0600)
+
+	//return nil
+}
+
+func galleryFileName(name string) string {
+	return "._gallery_" + name + ".yaml"
 }

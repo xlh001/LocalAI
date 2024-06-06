@@ -18,6 +18,72 @@ service Backend {
   rpc TTS(TTSRequest) returns (Result) {}
   rpc TokenizeString(PredictOptions) returns (TokenizationResponse) {}
   rpc Status(HealthMessage) returns (StatusResponse) {}
+
+  rpc StoresSet(StoresSetOptions) returns (Result) {}
+  rpc StoresDelete(StoresDeleteOptions) returns (Result) {}
+  rpc StoresGet(StoresGetOptions) returns (StoresGetResult) {}
+  rpc StoresFind(StoresFindOptions) returns (StoresFindResult) {}
+
+  rpc Rerank(RerankRequest) returns (RerankResult) {}
+}
+
+message RerankRequest {
+  string query = 1;
+  repeated string documents = 2;
+  int32 top_n = 3;
+}
+
+message RerankResult {
+  Usage usage = 1;
+  repeated DocumentResult results = 2;
+}
+
+message Usage {
+  int32 total_tokens = 1;
+  int32 prompt_tokens = 2;
+}
+
+message DocumentResult {
+  int32 index = 1;
+  string text = 2;
+  float relevance_score = 3;
+}
+
+message StoresKey {
+  repeated float Floats = 1;
+}
+
+message StoresValue {
+  bytes Bytes = 1;
+}
+
+message StoresSetOptions {
+  repeated StoresKey Keys = 1;
+  repeated StoresValue Values = 2;
+}
+
+message StoresDeleteOptions {
+  repeated StoresKey Keys = 1;
+}
+
+message StoresGetOptions {
+  repeated StoresKey Keys = 1;
+}
+
+message StoresGetResult {
+  repeated StoresKey Keys = 1;
+  repeated StoresValue Values = 2;
+}
+
+message StoresFindOptions {
+  StoresKey Key = 1;
+  int32 TopK = 2;
+}
+
+message StoresFindResult {
+  repeated StoresKey Keys = 1;
+  repeated StoresValue Values = 2;
+  repeated float Similarities = 3;
 }
 
 message HealthMessage {}
@@ -65,11 +131,15 @@ message PredictOptions {
   string NegativePrompt = 40;
   int32 NDraft = 41;
   repeated string Images = 42;
+  bool UseTokenizerTemplate = 43;
+  repeated Message Messages = 44;
 }
 
 // The response message containing the result
 message Reply {
   bytes message = 1;
+  int32 tokens = 2;
+  int32 prompt_tokens = 3;
 }
 
 message ModelOptions {
@@ -112,7 +182,6 @@ message ModelOptions {
   int32 CLIPSkip = 33;
   string ControlNet = 48;
 
-  // RWKV
   string Tokenizer = 34;
 
   // LLM (llama.cpp)
@@ -122,11 +191,17 @@ message ModelOptions {
 
   bool NoMulMatQ = 37;
   string DraftModel = 39;
-  
+
   string AudioPath = 38;
 
   // vllm
   string Quantization = 40;
+  float  GPUMemoryUtilization = 50;
+  bool   TrustRemoteCode = 51;
+  bool   EnforceEager = 52;
+  int32  SwapSpace = 53;
+  int32  MaxModelLen = 54;
+  int32  TensorParallelSize = 55;
 
   string MMProj = 41;
 
@@ -135,6 +210,11 @@ message ModelOptions {
   float YarnAttnFactor = 45;
   float YarnBetaFast = 46;
   float YarnBetaSlow = 47;
+
+  string Type = 49;
+
+  bool FlashAttention = 56;
+  bool NoKVOffload = 57;
 }
 
 message Result {
@@ -185,6 +265,8 @@ message TTSRequest {
   string text = 1;
   string model = 2;
   string dst = 3;
+  string voice = 4;
+  optional string language = 5;
 }
 
 message TokenizationResponse {
@@ -206,4 +288,9 @@ message StatusResponse {
   }
   State state = 1;
   MemoryUsageData memory = 2;
+}
+
+message Message {
+  string role = 1;
+  string content = 2;
 }

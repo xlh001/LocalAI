@@ -1,15 +1,13 @@
 #!/bin/bash
+set -e
 
-##
-## A bash script installs the required dependencies of VALL-E-X and prepares the environment
-export PATH=$PATH:/opt/conda/bin
+LIMIT_TARGETS="cublas"
 
-# Activate conda environment
-source activate transformers
+source $(dirname $0)/../common/libbackend.sh
 
-echo $CONDA_PREFIX
+installRequirements
 
+git clone https://github.com/turboderp/exllama $MY_DIR/source
+uv pip install ${BUILD_ISOLATION_FLAG} --requirement ${MY_DIR}/source/requirements.txt
 
-git clone https://github.com/turboderp/exllama $CONDA_PREFIX/exllama && pushd $CONDA_PREFIX/exllama && pip install -r requirements.txt && popd
-
-cp -rfv $CONDA_PREFIX/exllama/* ./
+cp -v ./*py $MY_DIR/source/
