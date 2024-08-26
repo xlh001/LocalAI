@@ -1,6 +1,6 @@
 accelerate
 transformers
-grpcio==1.65.5
+grpcio==1.66.0
 protobuf
 torch
 certifi
