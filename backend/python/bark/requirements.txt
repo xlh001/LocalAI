@@ -1,6 +1,6 @@
 accelerate
 bark==0.1.5
-grpcio==1.66.1
+grpcio==1.66.2
 protobuf
 certifi
 transformers
