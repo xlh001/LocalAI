@@ -1,6 +1,6 @@
 accelerate
 TTS==0.22.0
-grpcio==1.66.2
+grpcio==1.67.0
 protobuf
 certifi
 transformers
