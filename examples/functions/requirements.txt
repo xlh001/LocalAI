@@ -1,2 +1,2 @@
-langchain==0.3.4
+langchain==0.3.7
 openai==1.53.0
