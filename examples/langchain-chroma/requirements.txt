@@ -1,4 +1,4 @@
 langchain==0.3.7
-openai==1.54.4
+openai==1.55.0
 chromadb==0.5.18
 llama-index==0.12.1
