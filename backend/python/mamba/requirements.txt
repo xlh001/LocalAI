@@ -1,5 +1,5 @@
 causal-conv1d==1.4.0
-mamba-ssm==2.2.2
+mamba-ssm==2.2.4
 grpcio==1.67.0
 protobuf
 certifi
