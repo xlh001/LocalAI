@@ -3,7 +3,7 @@ accelerate
 compel
 peft
 diffusers
-grpcio==1.68.1
+grpcio==1.69.0
 opencv-python
 pillow
 protobuf
