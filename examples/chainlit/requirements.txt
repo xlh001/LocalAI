@@ -1,4 +1,4 @@
-llama_index==0.12.25
+llama_index==0.12.28
 requests==2.32.3
 weaviate_client==4.11.3
 transformers
