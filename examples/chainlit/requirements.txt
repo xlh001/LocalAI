@@ -1,6 +1,6 @@
 llama_index==0.12.35
 requests==2.32.3
-weaviate_client==4.14.1
+weaviate_client==4.14.3
 transformers
 torch
 chainlit
