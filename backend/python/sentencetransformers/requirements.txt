@@ -1,6 +1,6 @@
 accelerate
 sentence-transformers==3.4.1
 transformers
-grpcio==1.70.0
+grpcio==1.73.1
 protobuf
 certifi
