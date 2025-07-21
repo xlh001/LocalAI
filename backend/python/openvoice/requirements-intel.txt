@@ -15,7 +15,7 @@ unidecode==1.4.0
 whisper-timestamped==1.15.8
 openai
 python-dotenv
-pypinyin==0.54.0
+pypinyin==0.55.0
 cn2an==0.5.23
 jieba==0.42.1
 gradio==5.17.1
