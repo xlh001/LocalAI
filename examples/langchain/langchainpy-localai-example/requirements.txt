@@ -3,7 +3,7 @@ aiosignal==1.4.0
 async-timeout==5.0.1
 attrs==25.3.0
 certifi==2025.8.3
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
 colorama==0.4.6
 dataclasses-json==0.6.7
 debugpy==1.8.16
