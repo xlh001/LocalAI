@@ -12,7 +12,7 @@ numpy==2.2.3
 eng_to_ipa==0.0.2
 inflect==7.5.0
 unidecode==1.4.0
-whisper-timestamped==1.15.8
+whisper-timestamped==1.15.9
 openai
 python-dotenv
 pypinyin==0.55.0
