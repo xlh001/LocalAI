@@ -1,6 +1,6 @@
 accelerate
 rerankers[transformers]
-grpcio==1.74.0
+grpcio==1.75.1
 protobuf
 certifi
 transformers
