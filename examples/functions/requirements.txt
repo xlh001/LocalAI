@@ -1,2 +1,2 @@
 langchain==1.0.0
-openai==2.3.0
+openai==2.5.0
