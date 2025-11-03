@@ -10,7 +10,7 @@ debugpy==1.8.17
 frozenlist==1.8.0
 greenlet==3.2.4
 idna==3.11
-langchain==1.0.2
+langchain==1.0.3
 langchain-community==0.4
 marshmallow==4.0.1
 marshmallow-enum==1.5.1
