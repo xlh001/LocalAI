@@ -12,7 +12,7 @@ greenlet==3.2.4
 idna==3.11
 langchain==1.1.0
 langchain-community==0.4.1
-marshmallow==4.1.0
+marshmallow==4.1.1
 marshmallow-enum==1.5.1
 multidict==6.7.0
 mypy-extensions==1.1.0
