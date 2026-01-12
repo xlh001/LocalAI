@@ -3,5 +3,5 @@ transformers
 grpcio==1.75.1
 protobuf
 torch
-scipy==1.16.3
+scipy==1.17.0
 certifi
