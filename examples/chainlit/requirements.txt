@@ -1,5 +1,5 @@
 llama_index==0.14.18
-requests==2.32.5
+requests==2.33.0
 weaviate_client==4.20.3
 transformers
 torch
