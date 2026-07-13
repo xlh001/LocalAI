@@ -1,6 +1,6 @@
 causal-conv1d==1.6.2.post1
 mamba-ssm==2.3.2.post1
-grpcio==1.82.0
+grpcio==1.82.1
 protobuf
 certifi
 transformers
