@@ -5,7 +5,7 @@ metadata:
 spec:
   containers:
     - name: broken-pod
-      image: nginx:1.31.1
+      image: nginx:1.31.3
       livenessProbe:
         httpGet:
           path: /
