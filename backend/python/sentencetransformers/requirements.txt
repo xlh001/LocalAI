@@ -1,5 +1,5 @@
 accelerate
-sentence-transformers==5.6.1
+sentence-transformers==5.7.0
 transformers
 grpcio==1.83.0
 protobuf
