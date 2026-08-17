@@ -6,4 +6,4 @@ torch
 certifi
 intel-extension-for-transformers
 bitsandbytes
-setuptools==83.0.0 # https://github.com/mudler/LocalAI/issues/2406
+setuptools==84.0.0 # https://github.com/mudler/LocalAI/issues/2406
